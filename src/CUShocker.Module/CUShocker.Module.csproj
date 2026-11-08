@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<PropertyGroup>
-		<OpenShockModuleId>dev.skyeca.cushocker</OpenShockModuleId>
+		<OpenShockModuleId>my.vore.cushocker</OpenShockModuleId>
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<OutputType>Library</OutputType>
@@ -16,20 +16,18 @@
 		<Compile Include="..\Shared\**\*.cs" LinkBase="Shared" />
 	</ItemGroup>
 
-	<!-- Versions match what OpenShock Desktop 1.1.4 ships, like the official ForzaShock module -->
 	<ItemGroup>
 		<PackageReference Include="OpenShock.Desktop.ModuleBase" Version="1.1.4" />
 		<PackageReference Include="MudBlazor" Version="9.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
 	</ItemGroup>
 
-	<!-- Debug builds install straight into OpenShock Desktop; restart Desktop to load the new build -->
 	<Target Name="InstallModule" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
 		<PropertyGroup>
 			<ModuleInstallDir>$(APPDATA)\OpenShock\Desktop\modules\$(OpenShockModuleId)\</ModuleInstallDir>
 		</PropertyGroup>
 		<MakeDir Directories="$(ModuleInstallDir)" ContinueOnError="WarnAndContinue" />
-		<Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(ModuleInstallDir)" ContinueOnError="WarnAndContinue" />
+		<Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(ModuleInstallDir)" Retries="0" ContinueOnError="WarnAndContinue" />
 	</Target>
 
 </Project>

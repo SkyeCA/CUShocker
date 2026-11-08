@@ -4,7 +4,7 @@
 		<TargetFramework>net48</TargetFramework>
 		<AssemblyName>CUShocker</AssemblyName>
 		<RootNamespace>CUShocker.Mod</RootNamespace>
-		<BepInExPluginGuid>dev.skyeca.cushocker</BepInExPluginGuid>
+		<BepInExPluginGuid>my.vore.cushocker</BepInExPluginGuid>
 		<BepInExPluginName>CUShocker</BepInExPluginName>
 		<RestoreAdditionalProjectSources>
 			https://api.nuget.org/v3/index.json;
@@ -13,10 +13,7 @@
 		</RestoreAdditionalProjectSources>
 	</PropertyGroup>
 
-	<!--
-		The game folder. Override with the CU_PATH environment variable or -p:GamePath=...
-		Builds copy the plugin into $(GamePath)\BepInEx\plugins\CUShocker.
-	-->
+	<!-- set CU_PATH or pass -p:GamePath=... if the game is somewhere else -->
 	<PropertyGroup>
 		<GamePath Condition="'$(GamePath)' == '' and '$(CU_PATH)' != ''">$(CU_PATH)</GamePath>
 		<GamePath Condition="'$(GamePath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Casualties Unknown Demo</GamePath>
@@ -45,13 +42,12 @@
 
 	<Target Name="CheckGamePath" BeforeTargets="ResolveAssemblyReferences">
 		<Error Condition="!Exists('$(GameManagedDir)\Assembly-CSharp.dll')"
-			Text="Casualties Unknown not found at '$(GamePath)'. Set the CU_PATH environment variable, or build with -p:GamePath=&lt;game folder&gt;." />
+			Text="Game not found at '$(GamePath)', set CU_PATH" />
 	</Target>
 
-	<!-- Copying fails while the game is running (the DLL is locked), so that is only a warning -->
-	<Target Name="InstallPlugin" AfterTargets="Build">
+	<Target Name="InstallPlugin" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
 		<MakeDir Directories="$(PluginInstallDir)" ContinueOnError="WarnAndContinue" />
-		<Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginInstallDir)" ContinueOnError="WarnAndContinue" />
+		<Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginInstallDir)" Retries="0" ContinueOnError="WarnAndContinue" />
 	</Target>
 
 </Project>

@@ -1,6 +1,7 @@
 using BepInEx;
 using BepInEx.Logging;
 using CUShocker.Protocol;
+using UnityEngine;
 
 namespace CUShocker.Mod;
 
@@ -12,9 +13,13 @@ public sealed class Plugin : BaseUnityPlugin
 	private void Awake()
 	{
 		Logger = base.Logger;
-		Logger.LogInfo(
-			$"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded " +
-			$"(protocol v{ProtocolInfo.Version}, {ProtocolInfo.Host}:{ProtocolInfo.DefaultPort})"
-		);
+		var port = Config.Bind("Connection", "Port", ProtocolInfo.DefaultPort, "UDP port of the CUShocker module in OpenShock Desktop");
+
+		// own object instead of the BepInEx manager so HideManagerGameObject doesn't matter
+		var host = new GameObject("CUShocker") { hideFlags = HideFlags.HideAndDontSave };
+		DontDestroyOnLoad(host);
+		host.AddComponent<PainReporter>().Init(port.Value);
+
+		Logger.LogInfo($"Sending to {ProtocolInfo.Host}:{port.Value}");
 	}
 }

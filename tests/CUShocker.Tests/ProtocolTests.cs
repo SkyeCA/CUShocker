@@ -44,7 +44,7 @@ public class ProtocolTests
 	[Fact]
 	public void UsesInvariantNumberFormat()
 	{
-		// The mod runs inside the game, which may be on a locale with a comma decimal separator
+		// game could be running with a comma decimal separator
 		var previous = CultureInfo.CurrentCulture;
 		try
 		{

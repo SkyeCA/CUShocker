@@ -6,9 +6,8 @@
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
-	<!-- The same source the mod and module compile -->
 	<ItemGroup>
-		<Compile Include="..\..\src\Shared\**\*.cs" LinkBase="Shared" />
+		<ProjectReference Include="..\..\src\CUShocker.Module\CUShocker.Module.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

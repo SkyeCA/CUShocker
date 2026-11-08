@@ -1,12 +1,246 @@
-@* Placeholder until the listener, settings and simulator are built *@
+@implements IAsyncDisposable
 
-<MudPaper Class="pa-4">
-	<MudText Typo="Typo.h5">CUShocker</MudText>
-	<MudText Typo="Typo.body2" Class="mt-2">
-		Module loaded. Will listen for Casualties Unknown on UDP port @Config.Config.UdpPort (protocol v@(ProtocolInfo.Version)).
-	</MudText>
-</MudPaper>
+<MudStack Spacing="3" Class="pa-4">
+
+	<MudPaper Class="pa-4">
+		<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap">
+			<MudText Typo="Typo.h5">CUShocker</MudText>
+			<MudRadioGroup T="OutputMode" Value="Cfg.Output" ValueChanged="SetOutput">
+				<MudRadio T="OutputMode" Value="OutputMode.Off">Off</MudRadio>
+				<MudRadio T="OutputMode" Value="OutputMode.DryRun" Color="Color.Info">Test mode</MudRadio>
+				<MudRadio T="OutputMode" Value="OutputMode.Live" Color="Color.Error">Live</MudRadio>
+			</MudRadioGroup>
+		</MudStack>
+
+		<MudDivider Class="my-3" />
+
+		<MudGrid Spacing="2">
+			<MudItem xs="12" md="4">
+				<MudText Typo="Typo.overline">Game</MudText>
+				<div>
+					@if (Processor.GameConnected)
+					{
+						<MudChip T="string" Color="Color.Success" Size="Size.Small">Connected</MudChip>
+					}
+					else
+					{
+						<MudChip T="string" Color="Color.Default" Size="Size.Small">Waiting for game</MudChip>
+					}
+				</div>
+				@if (Listener.LastError is { } listenerError)
+				{
+					<MudAlert Severity="Severity.Error" Dense="true" Class="mt-1">@listenerError</MudAlert>
+				}
+			</MudItem>
+
+			<MudItem xs="12" md="4">
+				<MudText Typo="Typo.overline">Pain</MudText>
+				<MudText Typo="Typo.h4">@(ActiveState is { InWorld: true } s ? s.AveragePain.ToString("0.0") : "–")</MudText>
+			</MudItem>
+
+			<MudItem xs="12" md="4">
+				<MudText Typo="Typo.overline">Last command</MudText>
+				@if (Sender.LastSent is { } sent)
+				{
+					<MudText Typo="Typo.body1">@Describe(sent.Decision)</MudText>
+					<MudText Typo="Typo.caption">@sent.At.ToString("HH:mm:ss")</MudText>
+				}
+				else
+				{
+					<MudText Typo="Typo.body1">–</MudText>
+				}
+				@if (Sender.LastError is { } sendError)
+				{
+					<MudAlert Severity="Severity.Error" Dense="true" Class="mt-1">@sendError</MudAlert>
+				}
+			</MudItem>
+		</MudGrid>
+	</MudPaper>
+
+	@if (BuildInfo.IsDevBuild)
+	{
+		<MudPaper Class="pa-4">
+			<MudText Typo="Typo.h6">Simulator</MudText>
+			<MudSwitch T="bool" Value="Processor.UseSimulator" ValueChanged="SetUseSimulator" Color="Color.Primary" Label="Use simulator" />
+			@if (Processor.UseSimulator)
+			{
+				<MudSlider T="float" Value="_simPain" ValueChanged="SetSimPain" Min="0" Max="SimulatorMax" Step="0.5f" Color="Color.Primary" Class="mt-2">
+					Pain: @_simPain.ToString("0.0")
+				</MudSlider>
+				<MudCheckBox T="bool" Value="_simAlive" ValueChanged="SetSimAlive" Label="Alive" />
+			}
+		</MudPaper>
+	}
+
+	<MudPaper Class="pa-4">
+		<MudText Typo="Typo.h6">Shockers</MudText>
+		@if (AllHubs.Count == 0)
+		{
+			<MudText Typo="Typo.body2">No shockers found</MudText>
+		}
+		@foreach (var hub in AllHubs)
+		{
+			<MudText Typo="Typo.subtitle2" Class="mt-2">
+				@hub.Name
+				@if (!hub.Status.Online)
+				{
+					<MudChip T="string" Size="Size.Small" Color="Color.Warning">Offline</MudChip>
+				}
+			</MudText>
+			@foreach (var shocker in hub.Shockers)
+			{
+				<MudCheckBox T="bool" Value="Cfg.ShockerIds.Contains(shocker.Id)" ValueChanged="selected => SetShocker(shocker.Id, selected)"
+							 Label="@(shocker.IsPaused ? $"{shocker.Name} (paused)" : shocker.Name)" />
+			}
+		}
+	</MudPaper>
+
+	<MudPaper Class="pa-4">
+		<MudText Typo="Typo.h6">When to fire</MudText>
+		<MudRadioGroup T="TriggerFilter" @bind-Value="Cfg.Trigger" @bind-Value:after="Save">
+			<MudRadio T="TriggerFilter" Value="TriggerFilter.IncreasesOnly">Pain increases</MudRadio>
+			<MudRadio T="TriggerFilter" Value="TriggerFilter.AllChanges">Any pain change</MudRadio>
+		</MudRadioGroup>
+		<MudGrid Spacing="2" Class="mt-1">
+			<MudItem xs="12" sm="6">
+				<MudNumericField T="float" @bind-Value="Cfg.MinPainChange" @bind-Value:after="Save" Label="Minimum pain change"
+								 Min="PainTrigger.SmallestPainChange" Step="0.5f" Variant="Variant.Outlined" Margin="Margin.Dense" />
+			</MudItem>
+			<MudItem xs="12" sm="6">
+				<MudNumericField T="float" @bind-Value="Cfg.PainForMaximum" @bind-Value:after="Save" Label="Pain at maximum"
+								 Min="1" Step="5" Variant="Variant.Outlined" Margin="Margin.Dense" />
+			</MudItem>
+		</MudGrid>
+	</MudPaper>
+
+	<MudPaper Class="pa-4">
+		<MudText Typo="Typo.h6">Modes</MudText>
+		<MudStack Spacing="2" Class="mt-2">
+			<ModeEditor Title="Shock" Mode="Cfg.Shock" AccentColor="Color.Error" Changed="Save" />
+			@if (Features.Vibrate)
+			{
+				<ModeEditor Title="Vibrate" Mode="Cfg.Vibrate" AccentColor="Color.Primary" Changed="Save" />
+			}
+		</MudStack>
+	</MudPaper>
+
+	<MudPaper Class="pa-4">
+		<MudText Typo="Typo.h6">Connection</MudText>
+		<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
+			<MudNumericField T="int" @bind-Value="_port" Label="UDP port" Min="1" Max="65535" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width: 180px" />
+			<MudButton Variant="Variant.Outlined" Disabled="@(_port == Listener.Port && Listener.IsListening)" OnClick="ApplyPort">Apply</MudButton>
+		</MudStack>
+	</MudPaper>
+
+</MudStack>
 
 @code {
 	[ModuleInject] private IModuleConfig<CUShockerConfig> Config { get; set; } = null!;
+	[ModuleInject] private IOpenShockService OpenShock { get; set; } = null!;
+	[ModuleInject] private GameListener Listener { get; set; } = null!;
+	[ModuleInject] private PainProcessor Processor { get; set; } = null!;
+	[ModuleInject] private ControlSender Sender { get; set; } = null!;
+
+	private CUShockerConfig Cfg => Config.Config;
+
+	private readonly List<IAsyncDisposable> _subscriptions = [];
+	private Timer? _refreshTimer;
+	private int _port;
+
+	private float _simPain;
+	private bool _simAlive = true;
+	private long _simSeq;
+	private readonly string _simSession = "simulator-" + Guid.NewGuid().ToString("N");
+
+	protected override async Task OnInitializedAsync()
+	{
+		_port = Cfg.UdpPort;
+		Processor.StateChanged += Refresh;
+		Sender.StateChanged += Refresh;
+		Listener.StateChanged += Refresh;
+		_subscriptions.Add(await OpenShock.Data.Hubs.ValueUpdated.SubscribeAsync(_ => InvokeAsync(StateHasChanged)));
+		_refreshTimer = new Timer(_ => Refresh(), null, 1000, 1000);
+	}
+
+	private void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+	// TODO: shared hubs once we move past ModuleBase 1.1.4
+	private IReadOnlyList<IOpenShockHub> AllHubs => OpenShock.Data.Hubs.Value;
+
+	private PainState? ActiveState => Processor.UseSimulator ? Processor.LastSimulatorState : Processor.LastGameState;
+
+	private float SimulatorMax => Math.Max(100f, Cfg.PainForMaximum);
+
+
+
+	private static string Describe(ControlDecision decision) =>
+		$"{decision.Type} {decision.Intensity}% for {decision.DurationMs} ms";
+
+	private Task Save()
+	{
+		Config.SaveDeferred();
+		return Task.CompletedTask;
+	}
+
+	private Task SetOutput(OutputMode mode)
+	{
+		Cfg.Output = mode;
+		return Save();
+	}
+
+	private Task SetShocker(Guid id, bool selected)
+	{
+		if (selected && !Cfg.ShockerIds.Contains(id))
+			Cfg.ShockerIds.Add(id);
+		else if (!selected)
+			Cfg.ShockerIds.Remove(id);
+		return Save();
+	}
+
+	private async Task ApplyPort()
+	{
+		Cfg.UdpPort = _port;
+		await Save();
+		await Listener.RestartAsync(_port);
+	}
+
+	private void SetUseSimulator(bool use)
+	{
+		Processor.UseSimulator = use;
+		if (use)
+			SendSimulatedState();
+	}
+
+	private void SetSimPain(float pain)
+	{
+		_simPain = pain;
+		SendSimulatedState();
+	}
+
+	private void SetSimAlive(bool alive)
+	{
+		_simAlive = alive;
+		SendSimulatedState();
+	}
+
+	private void SendSimulatedState() => Processor.Handle(new PainState
+	{
+		Session = _simSession,
+		Seq = ++_simSeq,
+		InWorld = true,
+		Alive = _simAlive,
+		Conscious = _simAlive,
+		AveragePain = _simPain,
+	}, StateSource.Simulator);
+
+	public async ValueTask DisposeAsync()
+	{
+		Processor.StateChanged -= Refresh;
+		Sender.StateChanged -= Refresh;
+		Listener.StateChanged -= Refresh;
+		if (_refreshTimer is not null)
+			await _refreshTimer.DisposeAsync();
+		foreach (var subscription in _subscriptions)
+			await subscription.DisposeAsync();
+	}
 }

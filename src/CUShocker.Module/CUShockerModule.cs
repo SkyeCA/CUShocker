@@ -1,4 +1,5 @@
 using CUShocker.Module;
+using CUShocker.Module.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
@@ -6,7 +7,7 @@ using OpenShock.Desktop.ModuleBase;
 using OpenShock.Desktop.ModuleBase.Models;
 using OpenShock.Desktop.ModuleBase.Navigation;
 
-[assembly: DesktopModule(typeof(CUShockerModule), "dev.skyeca.cushocker", "CUShocker")]
+[assembly: DesktopModule(typeof(CUShockerModule), "my.vore.cushocker", "CUShocker")]
 [assembly: RequiredPermission(TokenPermissions.Shockers_Use)]
 
 namespace CUShocker.Module;
@@ -30,7 +31,13 @@ public sealed class CUShockerModule : DesktopModuleBase
 		services.AddSingleton(config);
 		services.AddSingleton(ModuleInstanceManager.OpenShock);
 		services.AddSingleton(ModuleInstanceManager.OpenShock.Control);
+		services.AddSingleton<ControlSender>();
+		services.AddSingleton<PainProcessor>();
+		services.AddSingleton<GameListener>();
 
 		ModuleServiceProvider = services.BuildServiceProvider();
+
+		// listen even when output is off so the page still shows the connection
+		ModuleServiceProvider.GetRequiredService<GameListener>().Start(config.Config.UdpPort);
 	}
 }
