@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CUShocker.Mod/CUShocker.Mod.csproj" />
+    <Project Path="src/CUShocker.Module/CUShocker.Module.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CUShocker.Tests/CUShocker.Tests.csproj" />
+  </Folder>
+</Solution>

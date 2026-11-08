@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net48</TargetFramework>
+		<AssemblyName>CUShocker</AssemblyName>
+		<RootNamespace>CUShocker.Mod</RootNamespace>
+		<BepInExPluginGuid>dev.skyeca.cushocker</BepInExPluginGuid>
+		<BepInExPluginName>CUShocker</BepInExPluginName>
+		<RestoreAdditionalProjectSources>
+			https://api.nuget.org/v3/index.json;
+			https://nuget.bepinex.dev/v3/index.json;
+			https://nuget.samboy.dev/v3/index.json
+		</RestoreAdditionalProjectSources>
+	</PropertyGroup>
+
+	<!--
+		The game folder. Override with the CU_PATH environment variable or -p:GamePath=...
+		Builds copy the plugin into $(GamePath)\BepInEx\plugins\CUShocker.
+	-->
+	<PropertyGroup>
+		<GamePath Condition="'$(GamePath)' == '' and '$(CU_PATH)' != ''">$(CU_PATH)</GamePath>
+		<GamePath Condition="'$(GamePath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Casualties Unknown Demo</GamePath>
+		<GameManagedDir>$(GamePath)\CasualtiesUnknown_Data\Managed</GameManagedDir>
+		<PluginInstallDir>$(GamePath)\BepInEx\plugins\CUShocker</PluginInstallDir>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="..\Shared\**\*.cs" LinkBase="Shared" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all" />
+		<PackageReference Include="BepInEx.Core" Version="5.4.21" />
+		<PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
+		<PackageReference Include="UnityEngine.Modules" Version="2022.3.62" IncludeAssets="compile" />
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="Assembly-CSharp">
+			<HintPath>$(GameManagedDir)\Assembly-CSharp.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+
+	<Target Name="CheckGamePath" BeforeTargets="ResolveAssemblyReferences">
+		<Error Condition="!Exists('$(GameManagedDir)\Assembly-CSharp.dll')"
+			Text="Casualties Unknown not found at '$(GamePath)'. Set the CU_PATH environment variable, or build with -p:GamePath=&lt;game folder&gt;." />
+	</Target>
+
+	<!-- Copying fails while the game is running (the DLL is locked), so that is only a warning -->
+	<Target Name="InstallPlugin" AfterTargets="Build">
+		<MakeDir Directories="$(PluginInstallDir)" ContinueOnError="WarnAndContinue" />
+		<Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(PluginInstallDir)" ContinueOnError="WarnAndContinue" />
+	</Target>
+
+</Project>

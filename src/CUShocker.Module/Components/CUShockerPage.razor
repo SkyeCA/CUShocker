@@ -1,0 +1,12 @@
+@* Placeholder until the listener, settings and simulator are built *@
+
+<MudPaper Class="pa-4">
+	<MudText Typo="Typo.h5">CUShocker</MudText>
+	<MudText Typo="Typo.body2" Class="mt-2">
+		Module loaded. Will listen for Casualties Unknown on UDP port @Config.Config.UdpPort (protocol v@(ProtocolInfo.Version)).
+	</MudText>
+</MudPaper>
+
+@code {
+	[ModuleInject] private IModuleConfig<CUShockerConfig> Config { get; set; } = null!;
+}
