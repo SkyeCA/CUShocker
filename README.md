@@ -38,4 +38,4 @@ Download the most recent version from the releases page, unzip it, and follow th
 
 ## AI
 
-AI was used for unit testing, generating build scripts, and generating the `.gitignore`.
+AI was used for unit testing, generating build scripts, generating the `.gitignore`, and code review.
