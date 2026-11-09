@@ -6,7 +6,6 @@ public readonly record struct ControlDecision(ControlType Type, byte Intensity, 
 
 public static class PainRules
 {
-	// limits for a control command in OpenShock Desktop
 	public const int MinIntensity = 1;
 	public const int MaxIntensity = 100;
 	public const int MinDurationMs = 300;
@@ -15,8 +14,6 @@ public static class PainRules
 	public static ControlDecision? Choose(CUShockerConfig config, float pain) =>
 		Choose(config, pain, Features.Vibrate);
 
-	// Highest "starts at pain" that's been reached wins (shock on a tie), since OpenShock
-	// only takes one command per shocker per request.
 	public static ControlDecision? Choose(CUShockerConfig config, float pain, bool includeVibrate)
 	{
 		if (!(pain > 0))

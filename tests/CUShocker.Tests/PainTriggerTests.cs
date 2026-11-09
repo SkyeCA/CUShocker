@@ -54,7 +54,7 @@ public class PainTriggerTests
 		Assert.True(Feed(20));
 		Assert.False(Feed(15));
 		Assert.False(Feed(10));
-		Assert.True(Feed(12)); // up 2 from 10
+		Assert.True(Feed(12));
 	}
 
 	[Fact]
@@ -80,7 +80,7 @@ public class PainTriggerTests
 		Feed(0);
 		Assert.False(Feed(50, inWorld: false));
 		Assert.False(Feed(50, alive: false));
-		Assert.False(Feed(50)); // new baseline
+		Assert.False(Feed(50));
 		Assert.True(Feed(52));
 	}
 

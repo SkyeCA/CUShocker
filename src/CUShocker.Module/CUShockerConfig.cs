@@ -36,7 +36,7 @@ public sealed class CUShockerConfig
 public enum OutputMode
 {
 	Off,
-	DryRun, // "Test mode" in the UI, don't rename, it's saved as a string
+	DryRun, // I renamed this 'Test Mode' in the UI fwiw
 	Live,
 }
 

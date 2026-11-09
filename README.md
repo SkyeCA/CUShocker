@@ -1,45 +1,41 @@
 # CUShocker
 
-Shocks your OpenShock shockers when you get hurt in Casualties Unknown.
+This is a mod to connect your OpenShock shockers to Casualties Unknown and extra motivation to keep your Expie safe!
 
-There are two parts:
-
-- `src/CUShocker.Mod` - BepInEx plugin. Reads the player's pain and sends it over UDP to localhost.
-- `src/CUShocker.Module` - OpenShock Desktop module. Receives the pain and sends the shocks. Settings live here.
-
-Vibrate is implemented but turned off for now (`Features.Vibrate`).
+If your Expie gets hurt? So do you!
 
 ## Requirements
 
 - Casualties Unknown with BepInEx 5
 - OpenShock Desktop 1.1.4+
-- .NET 10 SDK
 
 ## Building
+
+Note: You will need the dotnet 10 SDK to build this mod.
 
 ```
 dotnet build
 dotnet test
 ```
 
-Debug builds copy the mod into the game's `BepInEx\plugins\CUShocker` and the module into `%APPDATA%\OpenShock\Desktop\modules\my.vore.cushocker`. The game path defaults to the Steam install, set `CU_PATH` if yours is elsewhere. Close the game and OpenShock Desktop first or the copy fails.
-
-Debug builds also have a pain simulator on the module page for testing without the game.
+Debug builds copy the mod into the `BepInEx\plugins\CUShocker` game directory and the OpenShock module into the `%APPDATA%\OpenShock\Desktop\modules\my.vore.cushocker` directory. The game path defaults to the Steam install, so make sure to set `CU_PATH` if you aren't running via Steam. Make sure both the game and OpenShock Desktop are closed before doing a build.
 
 ## Releasing
+
+You can build releasable version with the following command:
 
 ```
 powershell -ExecutionPolicy Bypass -File package.ps1
 ```
 
-Outputs to `dist\`. `CUShocker-<version>.zip` is the one for players. The `.module.zip` is Desktop's own package format, for if it ever goes in a module repo.
+## Installing
 
-## Protocol
+Download the most recent version from the releases page, unzip it, and follow the instructions in the `README.txt` file.
 
-One JSON object per UDP packet to `127.0.0.1:37412`, sent on change and at least once a second.
+## Disclaimer
 
-```json
-{"v":1,"type":"state","session":"…","seq":42,"inWorld":true,"alive":true,"conscious":true,"averagePain":12.5}
-```
+**USE AT YOUR OWN RISK**: This software is provided "as is," without warranty of any kind. The author makes no guarantees regarding the safety, reliability, or accuracy of this software. By using this software, you assume full responsibility for any unintended effects, injuries, or damages that may occur.
 
-`session` is random per game launch and `seq` counts up within it, so old packets get dropped. The module treats the game as gone after 3 seconds without anything.
+## AI
+
+AI was used for unit testing, generating build scripts, and generating the `.gitignore`.

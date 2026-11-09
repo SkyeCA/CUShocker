@@ -1,9 +1,9 @@
-# Builds the release zips into dist\
+# You may need to run the follwing command for this script to work:
 #   powershell -ExecutionPolicy Bypass -File package.ps1
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-$desktopVersion = '1.1.4' # keep in sync with the ModuleBase package version
+$desktopVersion = '1.1.4'
 
 function Invoke-Dotnet {
 	& dotnet @args

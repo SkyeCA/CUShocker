@@ -1,5 +1,3 @@
-// Compiled into both the mod (net48) and the module (net10), so no dependencies here.
-
 using System;
 using System.Globalization;
 using System.Text;
@@ -27,7 +25,6 @@ public sealed class PainState
 	public int V { get; set; } = ProtocolInfo.Version;
 	public string Type { get; set; } = MessageTypes.State;
 
-	// Random per game launch, seq restarts with it
 	public string Session { get; set; } = "";
 	public long Seq { get; set; }
 
@@ -36,7 +33,6 @@ public sealed class PainState
 	public bool Conscious { get; set; }
 	public float AveragePain { get; set; }
 
-	// Written by hand since the game side has no JSON library
 	public string ToJson()
 	{
 		var json = new StringBuilder(160);

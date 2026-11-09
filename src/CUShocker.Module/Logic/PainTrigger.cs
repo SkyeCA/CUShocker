@@ -2,8 +2,6 @@ using CUShocker.Protocol;
 
 namespace CUShocker.Module.Logic;
 
-// Compares pain against the pain at the last command. With IncreasesOnly the baseline also
-// follows pain down, so getting hurt again while recovering still fires.
 public sealed class PainTrigger
 {
 	public const float SmallestPainChange = 0.1f;

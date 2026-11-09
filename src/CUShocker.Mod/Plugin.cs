@@ -14,8 +14,6 @@ public sealed class Plugin : BaseUnityPlugin
 	{
 		Logger = base.Logger;
 		var port = Config.Bind("Connection", "Port", ProtocolInfo.DefaultPort, "UDP port of the CUShocker module in OpenShock Desktop");
-
-		// own object instead of the BepInEx manager so HideManagerGameObject doesn't matter
 		var host = new GameObject("CUShocker") { hideFlags = HideFlags.HideAndDontSave };
 		DontDestroyOnLoad(host);
 		host.AddComponent<PainReporter>().Init(port.Value);

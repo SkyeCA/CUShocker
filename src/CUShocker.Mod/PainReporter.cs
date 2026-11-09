@@ -37,7 +37,6 @@ internal sealed class PainReporter : MonoBehaviour
 
 	private void Update()
 	{
-		// unscaled so the game's time scale doesn't slow this down
 		float now = Time.unscaledTime;
 		if (now < _nextSample)
 			return;
@@ -68,7 +67,6 @@ internal sealed class PainReporter : MonoBehaviour
 
 	private static PainState ReadState()
 	{
-		// no ?. here, Unity's == handles destroyed objects
 		var camera = PlayerCamera.main;
 		var body = camera != null ? camera.body : null;
 		if (body == null)
@@ -105,7 +103,7 @@ internal sealed class PainReporter : MonoBehaviour
 		}
 		catch (Exception e)
 		{
-			// windows sometimes throws here after an ICMP port unreachable, next send is fine
+			// windows sometimes throws here after an icmp port is unreachable, but next send is fine
 			if (!_sendErrorLogged)
 			{
 				Plugin.Logger.LogWarning($"Send failed: {e.Message}");

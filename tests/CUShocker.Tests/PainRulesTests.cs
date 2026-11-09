@@ -6,7 +6,7 @@ namespace CUShocker.Tests;
 
 public class PainRulesTests
 {
-	// test with vibrate on regardless of the feature flag
+	// test with vibrate on regardless of the featureflag
 	private static ControlDecision? Choose(CUShockerConfig config, float pain) =>
 		PainRules.Choose(config, pain, includeVibrate: true);
 

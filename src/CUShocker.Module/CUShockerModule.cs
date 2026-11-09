@@ -37,7 +37,6 @@ public sealed class CUShockerModule : DesktopModuleBase
 
 		ModuleServiceProvider = services.BuildServiceProvider();
 
-		// listen even when output is off so the page still shows the connection
 		ModuleServiceProvider.GetRequiredService<GameListener>().Start(config.Config.UdpPort);
 	}
 }

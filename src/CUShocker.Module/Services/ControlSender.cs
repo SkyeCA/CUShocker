@@ -8,8 +8,6 @@ namespace CUShocker.Module.Services;
 
 public sealed record SentControl(ControlDecision Decision, int ShockerCount, bool DryRun, DateTimeOffset At);
 
-// Sends one command at a time and only keeps the newest pending one,
-// so commands can't pile up behind a slow request.
 public sealed class ControlSender
 {
 	private readonly IModuleConfig<CUShockerConfig> _config;
