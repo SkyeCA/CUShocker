@@ -34,7 +34,7 @@ Download the most recent version from the releases page, unzip it, and follow th
 
 ## Disclaimer
 
-**USE AT YOUR OWN RISK**: This software is provided "as is," without warranty of any kind. The author makes no guarantees regarding the safety, reliability, or accuracy of this software. By using this software, you assume full responsibility for any unintended effects, injuries, or damages that may occur.
+**USE AT YOUR OWN RISK**: This software is provided "as is," without warranty of any kind. I make no guarantees regarding the safety, reliability, or accuracy of this software. By using this software, you assume full responsibility for any unintended effects, injuries, or damages that may occur.
 
 ## AI
 
