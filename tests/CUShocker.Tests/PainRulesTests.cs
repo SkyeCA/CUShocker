@@ -6,25 +6,13 @@ namespace CUShocker.Tests;
 
 public class PainRulesTests
 {
-	// test with vibrate on regardless of the featureflag
-	private static ControlDecision? Choose(CUShockerConfig config, float pain) =>
-		PainRules.Choose(config, pain, includeVibrate: true);
+	private static ControlDecision? Choose(CUShockerConfig config, float pain) => PainRules.Choose(config, pain);
 
-	[Fact]
-	public void VibrateNeverFiresWhileTheFeatureIsOff()
+	private static CUShockerConfig Config(ControlMode mode = ControlMode.Shock)
 	{
-		var config = Config();
-		config.Shock.Enabled = false;
-
-		Assert.Null(PainRules.Choose(config, 30, includeVibrate: false));
-		Assert.Equal(Features.Vibrate ? ControlType.Vibrate : null, PainRules.Choose(config, 30)?.Type);
-	}
-
-	private static CUShockerConfig Config()
-	{
-		var config = new CUShockerConfig { PainForMaximum = 100 };
-		config.Vibrate = new ModeConfig { Enabled = true, StartsAtPain = 10, MinIntensity = 20, MaxIntensity = 60, MinDurationMs = 300, MaxDurationMs = 1000 };
-		config.Shock = new ModeConfig { Enabled = true, StartsAtPain = 50, MinIntensity = 5, MaxIntensity = 25, MinDurationMs = 300, MaxDurationMs = 300 };
+		var config = new CUShockerConfig { PainForMaximum = 100, Mode = mode };
+		config.Vibrate = new ModeConfig { StartsAtPain = 10, MinIntensity = 20, MaxIntensity = 60, MinDurationMs = 300, MaxDurationMs = 1000 };
+		config.Shock = new ModeConfig { StartsAtPain = 50, MinIntensity = 5, MaxIntensity = 25, MinDurationMs = 300, MaxDurationMs = 300 };
 		return config;
 	}
 
@@ -38,42 +26,42 @@ public class PainRulesTests
 	}
 
 	[Theory]
-	[InlineData(0.5f, null)]
-	[InlineData(9.9f, null)]
-	[InlineData(10f, ControlType.Vibrate)]
-	[InlineData(49f, ControlType.Vibrate)]
-	[InlineData(50f, ControlType.Shock)]
-	[InlineData(500f, ControlType.Shock)]
-	public void HighestThresholdReachedWins(float pain, ControlType? expected)
+	[InlineData(ControlMode.Shock, ControlType.Shock)]
+	[InlineData(ControlMode.Vibrate, ControlType.Vibrate)]
+	public void SelectedModeIsAlwaysUsed(ControlMode mode, ControlType expected)
 	{
-		Assert.Equal(expected, Choose(Config(), pain)?.Type);
+		var config = Config(mode);
+
+		Assert.Equal(expected, Choose(config, 60)?.Type);
+		Assert.Equal(expected, Choose(config, 500)?.Type);
+	}
+
+	[Theory]
+	[InlineData(ControlMode.Shock, 49.9f, null)]
+	[InlineData(ControlMode.Shock, 50f, ControlType.Shock)]
+	[InlineData(ControlMode.Vibrate, 9.9f, null)]
+	[InlineData(ControlMode.Vibrate, 10f, ControlType.Vibrate)]
+	public void NothingBelowTheSelectedModesThreshold(ControlMode mode, float pain, ControlType? expected)
+	{
+		Assert.Equal(expected, Choose(Config(mode), pain)?.Type);
 	}
 
 	[Fact]
-	public void DisabledModesAreSkipped()
+	public void UsesOnlyTheSelectedModesSettings()
 	{
-		var config = Config();
-		config.Shock.Enabled = false;
+		var shock = Choose(Config(ControlMode.Shock), 100)!.Value;
+		Assert.Equal(25, shock.Intensity);
+		Assert.Equal(300, shock.DurationMs);
 
-		Assert.Equal(ControlType.Vibrate, Choose(config, 80)?.Type);
-	}
-
-	[Fact]
-	public void TiesPreferShock()
-	{
-		var config = Config();
-		config.Vibrate.StartsAtPain = config.Shock.StartsAtPain = 1;
-
-		Assert.Equal(ControlType.Shock, Choose(config, 5)?.Type);
-		config.Shock.Enabled = false;
-		Assert.Equal(ControlType.Vibrate, Choose(config, 5)?.Type);
+		var vibrate = Choose(Config(ControlMode.Vibrate), 100)!.Value;
+		Assert.Equal(60, vibrate.Intensity);
+		Assert.Equal(1000, vibrate.DurationMs);
 	}
 
 	[Fact]
 	public void ScalesFromModeThresholdToPainAtMaximum()
 	{
-		var config = Config();
-		config.Shock.Enabled = false;
+		var config = Config(ControlMode.Vibrate);
 
 		var atThreshold = Choose(config, 10)!.Value;
 		Assert.Equal(20, atThreshold.Intensity);
@@ -91,9 +79,8 @@ public class PainRulesTests
 	[Fact]
 	public void ClampsToWhatOpenShockAccepts()
 	{
-		var config = Config();
-		config.Vibrate = new ModeConfig { Enabled = true, StartsAtPain = 1, MinIntensity = 0, MaxIntensity = 400, MinDurationMs = 50, MaxDurationMs = 90000 };
-		config.Shock.Enabled = false;
+		var config = Config(ControlMode.Vibrate);
+		config.Vibrate = new ModeConfig { StartsAtPain = 1, MinIntensity = 0, MaxIntensity = 400, MinDurationMs = 50, MaxDurationMs = 90000 };
 
 		var low = Choose(config, 1)!.Value;
 		Assert.Equal(PainRules.MinIntensity, low.Intensity);

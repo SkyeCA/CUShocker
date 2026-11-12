@@ -114,14 +114,12 @@
 	</MudPaper>
 
 	<MudPaper Class="pa-4">
-		<MudText Typo="Typo.h6">Modes</MudText>
-		<MudStack Spacing="2" Class="mt-2">
-			<ModeEditor Title="Shock" Mode="Cfg.Shock" AccentColor="Color.Error" Changed="Save" />
-			@if (Features.Vibrate)
-			{
-				<ModeEditor Title="Vibrate" Mode="Cfg.Vibrate" AccentColor="Color.Primary" Changed="Save" />
-			}
-		</MudStack>
+		<MudText Typo="Typo.h6">Mode</MudText>
+		<MudRadioGroup T="ControlMode" @bind-Value="Cfg.Mode" @bind-Value:after="Save">
+			<MudRadio T="ControlMode" Value="ControlMode.Shock" Color="Color.Error">Shock</MudRadio>
+			<MudRadio T="ControlMode" Value="ControlMode.Vibrate" Color="Color.Primary">Vibrate</MudRadio>
+		</MudRadioGroup>
+		<ModeEditor @key="Cfg.Mode" Mode="ActiveMode" Changed="Save" />
 	</MudPaper>
 
 	<MudPaper Class="pa-4">
@@ -171,7 +169,7 @@
 
 	private float SimulatorMax => Math.Max(100f, Cfg.PainForMaximum);
 
-
+	private ModeConfig ActiveMode => Cfg.Mode == ControlMode.Vibrate ? Cfg.Vibrate : Cfg.Shock;
 
 	private static string Describe(ControlDecision decision) =>
 		$"{decision.Type} {decision.Intensity}% for {decision.DurationMs} ms";

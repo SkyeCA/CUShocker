@@ -11,46 +11,29 @@ public static class PainRules
 	public const int MinDurationMs = 300;
 	public const int MaxDurationMs = 30000;
 
-	public static ControlDecision? Choose(CUShockerConfig config, float pain) =>
-		Choose(config, pain, Features.Vibrate);
-
-	public static ControlDecision? Choose(CUShockerConfig config, float pain, bool includeVibrate)
+	public static ControlDecision? Choose(CUShockerConfig config, float pain)
 	{
 		if (!(pain > 0))
 			return null;
 
-		ControlType? bestType = null;
-		ModeConfig? best = null;
-		foreach (var (type, mode) in Modes(config, includeVibrate))
+		var (type, mode) = config.Mode switch
 		{
-			if (!mode.Enabled || pain < mode.StartsAtPain)
-				continue;
-			if (best is null || mode.StartsAtPain > best.StartsAtPain)
-			{
-				bestType = type;
-				best = mode;
-			}
-		}
-		if (best is null || bestType is null)
+			ControlMode.Vibrate => (ControlType.Vibrate, config.Vibrate),
+			_ => (ControlType.Shock, config.Shock),
+		};
+		if (pain < mode.StartsAtPain)
 			return null;
 
-		float t = PainFraction(pain, best.StartsAtPain, config.PainForMaximum);
-		var (minIntensity, maxIntensity) = Range(best.MinIntensity, best.MaxIntensity, MinIntensity, MaxIntensity);
-		var (minDuration, maxDuration) = Range(best.MinDurationMs, best.MaxDurationMs, MinDurationMs, MaxDurationMs);
+		float t = PainFraction(pain, mode.StartsAtPain, config.PainForMaximum);
+		var (minIntensity, maxIntensity) = Range(mode.MinIntensity, mode.MaxIntensity, MinIntensity, MaxIntensity);
+		var (minDuration, maxDuration) = Range(mode.MinDurationMs, mode.MaxDurationMs, MinDurationMs, MaxDurationMs);
 
 		return new ControlDecision(
-			bestType.Value,
+			type,
 			(byte)Lerp(minIntensity, maxIntensity, t),
 			(ushort)Lerp(minDuration, maxDuration, t),
 			pain
 		);
-	}
-
-	private static IEnumerable<(ControlType Type, ModeConfig Mode)> Modes(CUShockerConfig config, bool includeVibrate)
-	{
-		yield return (ControlType.Shock, config.Shock);
-		if (includeVibrate)
-			yield return (ControlType.Vibrate, config.Vibrate);
 	}
 
 	public static float PainFraction(float pain, float startsAtPain, float painForMaximum)

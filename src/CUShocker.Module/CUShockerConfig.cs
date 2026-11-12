@@ -12,9 +12,10 @@ public sealed class CUShockerConfig
 	public float MinPainChange { get; set; } = 1f;
 	public float PainForMaximum { get; set; } = 100f;
 
+	public ControlMode Mode { get; set; } = ControlMode.Shock;
+
 	public ModeConfig Shock { get; set; } = new()
 	{
-		Enabled = true,
 		StartsAtPain = 1,
 		MinIntensity = 5,
 		MaxIntensity = 25,
@@ -24,7 +25,6 @@ public sealed class CUShockerConfig
 
 	public ModeConfig Vibrate { get; set; } = new()
 	{
-		Enabled = true,
 		StartsAtPain = 1,
 		MinIntensity = 10,
 		MaxIntensity = 60,
@@ -40,6 +40,12 @@ public enum OutputMode
 	Live,
 }
 
+public enum ControlMode
+{
+	Shock,
+	Vibrate,
+}
+
 public enum TriggerFilter
 {
 	AllChanges,
@@ -48,7 +54,6 @@ public enum TriggerFilter
 
 public sealed class ModeConfig
 {
-	public bool Enabled { get; set; }
 	public float StartsAtPain { get; set; }
 	public int MinIntensity { get; set; } = 1;
 	public int MaxIntensity { get; set; } = 1;
