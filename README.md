@@ -4,6 +4,10 @@ This is a mod to connect your OpenShock shockers to Casualties Unknown and extra
 
 If your Expie gets hurt? So do you!
 
+## Links
+
+[Nexus Mod Page](https://www.nexusmods.com/scavprototype/mods/879)
+
 ## Requirements
 
 - Casualties Unknown with BepInEx 5
