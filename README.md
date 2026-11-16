@@ -1,6 +1,6 @@
 # CUShocker
 
-This is a mod to connect your OpenShock shockers to Casualties Unknown and extra motivation to keep your Expie safe!
+This is a mod to connect your OpenShock or PiShock shockers to Casualties Unknown and extra motivation to keep your Expie safe!
 
 If your Expie gets hurt? So do you!
 
@@ -11,7 +11,8 @@ If your Expie gets hurt? So do you!
 ## Requirements
 
 - Casualties Unknown with BepInEx 5
-- OpenShock Desktop 1.1.4+
+- [OpenShock Desktop](https://openshock.org/desktop) 1.3.1+ if using OpenShock
+- [MultiShock](https://mshock.akiradev.me/) 4.8.3+ if using PiShock
 
 ## Building
 
@@ -22,7 +23,11 @@ dotnet build
 dotnet test
 ```
 
-Debug builds copy the mod into the `BepInEx\plugins\CUShocker` game directory and the OpenShock module into the `%APPDATA%\OpenShock\Desktop\modules\my.vore.cushocker` directory. The game path defaults to the Steam install, so make sure to set `CU_PATH` if you aren't running via Steam. Make sure both the game and OpenShock Desktop are closed before doing a build.
+Build Notes: 
+
+- The game path defaults to the Steam install, so make sure to set `CU_PATH` if you aren't running via Steam.
+- For dev testing add the arg `-p:Simulator=true` when building to include a pain simulator in the OpenShock/Multishock module
+- Make sure the game, OpenShock Desktop, and MultiShock are closed before doing a build.
 
 ## Releasing
 

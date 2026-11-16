@@ -1,23 +1,19 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using CUShocker.Module;
-using CUShocker.Module.Services;
+using CUShocker.Core;
+using CUShocker.Core.Logic;
+using CUShocker.Core.Services;
 using CUShocker.Protocol;
 using Microsoft.Extensions.Logging.Abstractions;
-using OpenShock.Desktop.ModuleBase.Api;
-using OpenShock.Desktop.ModuleBase.Config;
-using OpenShock.Desktop.ModuleBase.Models;
-using OpenShock.MinimalEvents;
 
 namespace CUShocker.Tests;
 
 public sealed class EndToEndTests : IAsyncLifetime
 {
-	private static readonly Guid ShockerId = Guid.NewGuid();
-
-	private readonly FakeConfig _config = new();
-	private readonly FakeControl _control = new();
+	private readonly CUShockerSettings _settings = new() { Output = OutputMode.Live };
+	private readonly ControlLimits _limits = new(MinIntensity: 1, MaxIntensity: 100, MinDurationMs: 300, MaxDurationMs: 30000);
+	private readonly RecordingOutput _output = new();
 	private readonly GameListener _listener;
 	private readonly PainProcessor _processor;
 	private readonly UdpClient _game = new();
@@ -26,10 +22,8 @@ public sealed class EndToEndTests : IAsyncLifetime
 
 	public EndToEndTests()
 	{
-		_config.Config.ShockerIds.Add(ShockerId);
-		_config.Config.Output = OutputMode.Live;
-		var sender = new ControlSender(_config, _control, NullLogger<ControlSender>.Instance);
-		_processor = new PainProcessor(_config, sender);
+		var sender = new ControlSender(_settings, _output, NullLogger<ControlSender>.Instance);
+		_processor = new PainProcessor(_settings, _limits, sender);
 		_listener = new GameListener(_processor, NullLogger<GameListener>.Instance);
 	}
 
@@ -66,11 +60,10 @@ public sealed class EndToEndTests : IAsyncLifetime
 		await SendPain(0);
 		await SendPain(40);
 
-		await WaitUntil(() => !_control.Sent.IsEmpty);
-		var shock = Assert.Single(Assert.Single(_control.Sent));
-		Assert.Equal(ShockerId, shock.Id);
-		Assert.Equal(ControlType.Shock, shock.Type);
-		Assert.True(shock.Exclusive);
+		await WaitUntil(() => !_output.Sent.IsEmpty);
+		var sent = Assert.Single(_output.Sent);
+		Assert.Equal(ControlMode.Shock, sent.Mode);
+		Assert.Equal(40f, sent.Pain);
 		Assert.True(_processor.GameConnected);
 		Assert.Equal(40f, _processor.LastGameState?.AveragePain);
 	}
@@ -87,37 +80,49 @@ public sealed class EndToEndTests : IAsyncLifetime
 		Assert.Equal(1, _listener.StaleCount);
 		Assert.Equal(1, _listener.RejectedCount);
 		Assert.Equal(0.5f, _processor.LastGameState?.AveragePain);
-		Assert.True(_control.Sent.IsEmpty);
+		Assert.True(_output.Sent.IsEmpty);
 	}
 
 	[Fact]
 	public async Task DryRunSendsNothing()
 	{
-		_config.Config.Output = OutputMode.DryRun;
+		_settings.Output = OutputMode.DryRun;
 		await SendPain(0);
 		await SendPain(40);
 
 		await WaitUntil(() => _processor.LastDecision is not null);
 		await Task.Delay(200);
-		Assert.True(_control.Sent.IsEmpty);
+		Assert.True(_output.Sent.IsEmpty);
+	}
+
+	[Fact]
+	public async Task NoShockersSelectedIsReported()
+	{
+		_output.ShockerCount = 0;
+		var sender = new ControlSender(_settings, _output, NullLogger<ControlSender>.Instance);
+
+		sender.Submit(new ControlDecision(ControlMode.Shock, 10, 300, 40));
+
+		await WaitUntil(() => sender.LastError is not null);
+		Assert.Equal("No shockers selected", sender.LastError);
+		Assert.True(_output.Sent.IsEmpty);
 	}
 
 	[Fact]
 	public async Task SimulatorReplacesTheGameWhileOn()
 	{
-		_processor.UseSimulator = true;
+		var simulator = new PainSimulator(_processor, _settings) { Enabled = true };
 		await SendPain(0);
 		await SendPain(40);
 		await WaitUntil(() => _processor.LastGameState?.AveragePain == 40f);
 
-		_processor.Handle(new PainState { Session = "sim", Seq = 1, InWorld = true, Alive = true, AveragePain = 0 }, StateSource.Simulator);
-		_processor.Handle(new PainState { Session = "sim", Seq = 2, InWorld = true, Alive = true, AveragePain = 70 }, StateSource.Simulator);
+		simulator.SetPain(70);
 
-		await WaitUntil(() => !_control.Sent.IsEmpty);
+		await WaitUntil(() => !_output.Sent.IsEmpty);
 		await Task.Delay(200);
-		var only = Assert.Single(_control.Sent);
-		Assert.Equal(70f, _processor.LastDecision?.Pain);
-		Assert.Single(only);
+		var only = Assert.Single(_output.Sent);
+		Assert.Equal(70f, only.Pain);
+		Assert.Equal(70f, _processor.ActiveState?.AveragePain);
 	}
 
 	private static async Task WaitUntil(Func<bool> condition)
@@ -137,27 +142,16 @@ public sealed class EndToEndTests : IAsyncLifetime
 		return ((IPEndPoint)probe.Client.LocalEndPoint!).Port;
 	}
 
-	private sealed class FakeConfig : IModuleConfig<CUShockerConfig>
+	private sealed class RecordingOutput : IShockerOutput
 	{
-		public CUShockerConfig Config { get; } = new();
-		public void SaveDeferred() { }
-		public Task Save() => Task.CompletedTask;
-	}
+		public ConcurrentQueue<ControlDecision> Sent { get; } = new();
 
-	private sealed class FakeControl : IOpenShockControl
-	{
-		public ConcurrentQueue<List<ShockerControl>> Sent { get; } = new();
+		public int ShockerCount { get; set; } = 1;
 
-		public Task Control(IEnumerable<ShockerControl> shocks, string? customName = null)
+		public Task Send(ControlDecision decision)
 		{
-			Sent.Enqueue(shocks.ToList());
+			Sent.Enqueue(decision);
 			return Task.CompletedTask;
 		}
-
-		public void LiveControl(IEnumerable<Guid> shockers, byte intensity, ControlType type) => throw new NotSupportedException();
-		public void ControlAllShockers(byte intensity, ControlType type) => throw new NotSupportedException();
-		public Task ControlAll(ushort duration, byte intensity, ControlType type, bool exclusive = false, string? customName = null) => throw new NotSupportedException();
-		public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnRemoteControlledShocker => throw new NotSupportedException();
-		public IAsyncMinimalEventObservable<RemoteControlledShockerArgs> OnLocalControlledShocker => throw new NotSupportedException();
 	}
 }

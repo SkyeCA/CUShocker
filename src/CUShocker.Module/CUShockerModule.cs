@@ -1,3 +1,5 @@
+using CUShocker.Core;
+using CUShocker.Core.Services;
 using CUShocker.Module;
 using CUShocker.Module.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,10 +31,14 @@ public sealed class CUShockerModule : DesktopModuleBase
 		services.AddSingleton(loggerFactory);
 		services.AddLogging();
 		services.AddSingleton(config);
+		services.AddSingleton<CUShockerSettings>(config.Config);
 		services.AddSingleton(ModuleInstanceManager.OpenShock);
 		services.AddSingleton(ModuleInstanceManager.OpenShock.Control);
+		services.AddSingleton(OpenShockOutput.Limits);
+		services.AddSingleton<IShockerOutput, OpenShockOutput>();
 		services.AddSingleton<ControlSender>();
 		services.AddSingleton<PainProcessor>();
+		services.AddSingleton<PainSimulator>();
 		services.AddSingleton<GameListener>();
 
 		ModuleServiceProvider = services.BuildServiceProvider();

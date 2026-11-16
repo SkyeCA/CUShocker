@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/CUShocker.Core/CUShocker.Core.csproj" />
     <Project Path="src/CUShocker.Mod/CUShocker.Mod.csproj" />
     <Project Path="src/CUShocker.Module/CUShocker.Module.csproj" />
+    <Project Path="src/CUShocker.MultiShock/CUShocker.MultiShock.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CUShocker.Tests/CUShocker.Tests.csproj" />

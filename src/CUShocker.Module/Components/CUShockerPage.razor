@@ -35,14 +35,14 @@
 
 			<MudItem xs="12" md="4">
 				<MudText Typo="Typo.overline">Pain</MudText>
-				<MudText Typo="Typo.h4">@(ActiveState is { InWorld: true } s ? s.AveragePain.ToString("0.0") : "–")</MudText>
+				<MudText Typo="Typo.h4">@(Processor.ActiveState is { InWorld: true } s ? s.AveragePain.ToString("0.0") : "–")</MudText>
 			</MudItem>
 
 			<MudItem xs="12" md="4">
 				<MudText Typo="Typo.overline">Last command</MudText>
 				@if (Sender.LastSent is { } sent)
 				{
-					<MudText Typo="Typo.body1">@Describe(sent.Decision)</MudText>
+					<MudText Typo="Typo.body1">@sent.Decision.Describe()</MudText>
 					<MudText Typo="Typo.caption">@sent.At.ToString("HH:mm:ss")</MudText>
 				}
 				else
@@ -57,17 +57,17 @@
 		</MudGrid>
 	</MudPaper>
 
-	@if (BuildInfo.IsDevBuild)
+	@if (BuildInfo.HasSimulator)
 	{
 		<MudPaper Class="pa-4">
 			<MudText Typo="Typo.h6">Simulator</MudText>
-			<MudSwitch T="bool" Value="Processor.UseSimulator" ValueChanged="SetUseSimulator" Color="Color.Primary" Label="Use simulator" />
-			@if (Processor.UseSimulator)
+			<MudSwitch T="bool" Value="Simulator.Enabled" ValueChanged="enabled => Simulator.Enabled = enabled" Color="Color.Primary" Label="Use simulator" />
+			@if (Simulator.Enabled)
 			{
-				<MudSlider T="float" Value="_simPain" ValueChanged="SetSimPain" Min="0" Max="SimulatorMax" Step="0.5f" Color="Color.Primary" Class="mt-2">
-					Pain: @_simPain.ToString("0.0")
+				<MudSlider T="float" Value="Simulator.Pain" ValueChanged="Simulator.SetPain" Min="0" Max="Simulator.MaxPain" Step="0.5f" Color="Color.Primary" Class="mt-2">
+					Pain: @Simulator.Pain.ToString("0.0")
 				</MudSlider>
-				<MudCheckBox T="bool" Value="_simAlive" ValueChanged="SetSimAlive" Label="Alive" />
+				<MudCheckBox T="bool" Value="Simulator.Alive" ValueChanged="Simulator.SetAlive" Label="Alive" />
 			}
 		</MudPaper>
 	}
@@ -119,7 +119,7 @@
 			<MudRadio T="ControlMode" Value="ControlMode.Shock" Color="Color.Error">Shock</MudRadio>
 			<MudRadio T="ControlMode" Value="ControlMode.Vibrate" Color="Color.Primary">Vibrate</MudRadio>
 		</MudRadioGroup>
-		<ModeEditor @key="Cfg.Mode" Mode="ActiveMode" Changed="Save" />
+		<ModeEditor @key="Cfg.Mode" Mode="Cfg.ActiveMode" Limits="Limits" Changed="Save" />
 	</MudPaper>
 
 	<MudPaper Class="pa-4">
@@ -138,17 +138,14 @@
 	[ModuleInject] private GameListener Listener { get; set; } = null!;
 	[ModuleInject] private PainProcessor Processor { get; set; } = null!;
 	[ModuleInject] private ControlSender Sender { get; set; } = null!;
+	[ModuleInject] private PainSimulator Simulator { get; set; } = null!;
+	[ModuleInject] private ControlLimits Limits { get; set; } = null!;
 
 	private CUShockerConfig Cfg => Config.Config;
 
 	private readonly List<IAsyncDisposable> _subscriptions = [];
 	private Timer? _refreshTimer;
 	private int _port;
-
-	private float _simPain;
-	private bool _simAlive = true;
-	private long _simSeq;
-	private readonly string _simSession = "simulator-" + Guid.NewGuid().ToString("N");
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -164,15 +161,6 @@
 
 	// TODO: shared hubs once we move past ModuleBase 1.1.4
 	private IReadOnlyList<IOpenShockHub> AllHubs => OpenShock.Data.Hubs.Value;
-
-	private PainState? ActiveState => Processor.UseSimulator ? Processor.LastSimulatorState : Processor.LastGameState;
-
-	private float SimulatorMax => Math.Max(100f, Cfg.PainForMaximum);
-
-	private ModeConfig ActiveMode => Cfg.Mode == ControlMode.Vibrate ? Cfg.Vibrate : Cfg.Shock;
-
-	private static string Describe(ControlDecision decision) =>
-		$"{decision.Type} {decision.Intensity}% for {decision.DurationMs} ms";
 
 	private Task Save()
 	{
@@ -201,35 +189,6 @@
 		await Save();
 		await Listener.RestartAsync(_port);
 	}
-
-	private void SetUseSimulator(bool use)
-	{
-		Processor.UseSimulator = use;
-		if (use)
-			SendSimulatedState();
-	}
-
-	private void SetSimPain(float pain)
-	{
-		_simPain = pain;
-		SendSimulatedState();
-	}
-
-	private void SetSimAlive(bool alive)
-	{
-		_simAlive = alive;
-		SendSimulatedState();
-	}
-
-	private void SendSimulatedState() => Processor.Handle(new PainState
-	{
-		Session = _simSession,
-		Seq = ++_simSeq,
-		InWorld = true,
-		Alive = _simAlive,
-		Conscious = _simAlive,
-		AveragePain = _simPain,
-	}, StateSource.Simulator);
 
 	public async ValueTask DisposeAsync()
 	{

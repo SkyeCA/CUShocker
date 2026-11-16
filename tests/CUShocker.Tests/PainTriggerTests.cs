@@ -1,5 +1,5 @@
-using CUShocker.Module;
-using CUShocker.Module.Logic;
+using CUShocker.Core;
+using CUShocker.Core.Logic;
 using CUShocker.Protocol;
 
 namespace CUShocker.Tests;

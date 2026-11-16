@@ -3,7 +3,7 @@ using System.Net.Sockets;
 using CUShocker.Protocol;
 using Microsoft.Extensions.Logging;
 
-namespace CUShocker.Module.Services;
+namespace CUShocker.Core.Services;
 
 public sealed class GameListener : IAsyncDisposable
 {

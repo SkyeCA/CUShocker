@@ -1,35 +1,29 @@
-using OpenShock.Desktop.ModuleBase.Models;
+namespace CUShocker.Core.Logic;
 
-namespace CUShocker.Module.Logic;
+public readonly record struct ControlDecision(ControlMode Mode, byte Intensity, ushort DurationMs, float Pain)
+{
+	public string Describe() => $"{Mode} {Intensity}% for {DurationMs} ms";
+}
 
-public readonly record struct ControlDecision(ControlType Type, byte Intensity, ushort DurationMs, float Pain);
+public sealed record ControlLimits(int MinIntensity, int MaxIntensity, int MinDurationMs, int MaxDurationMs);
 
 public static class PainRules
 {
-	public const int MinIntensity = 1;
-	public const int MaxIntensity = 100;
-	public const int MinDurationMs = 300;
-	public const int MaxDurationMs = 30000;
-
-	public static ControlDecision? Choose(CUShockerConfig config, float pain)
+	public static ControlDecision? Choose(CUShockerSettings config, ControlLimits limits, float pain)
 	{
 		if (!(pain > 0))
 			return null;
 
-		var (type, mode) = config.Mode switch
-		{
-			ControlMode.Vibrate => (ControlType.Vibrate, config.Vibrate),
-			_ => (ControlType.Shock, config.Shock),
-		};
+		var mode = config.ActiveMode;
 		if (pain < mode.StartsAtPain)
 			return null;
 
 		float t = PainFraction(pain, mode.StartsAtPain, config.PainForMaximum);
-		var (minIntensity, maxIntensity) = Range(mode.MinIntensity, mode.MaxIntensity, MinIntensity, MaxIntensity);
-		var (minDuration, maxDuration) = Range(mode.MinDurationMs, mode.MaxDurationMs, MinDurationMs, MaxDurationMs);
+		var (minIntensity, maxIntensity) = Range(mode.MinIntensity, mode.MaxIntensity, limits.MinIntensity, limits.MaxIntensity);
+		var (minDuration, maxDuration) = Range(mode.MinDurationMs, mode.MaxDurationMs, limits.MinDurationMs, limits.MaxDurationMs);
 
 		return new ControlDecision(
-			type,
+			config.Mode,
 			(byte)Lerp(minIntensity, maxIntensity, t),
 			(ushort)Lerp(minDuration, maxDuration, t),
 			pain

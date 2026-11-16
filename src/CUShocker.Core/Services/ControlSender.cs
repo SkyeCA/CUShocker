@@ -1,17 +1,14 @@
-using CUShocker.Module.Logic;
+using CUShocker.Core.Logic;
 using Microsoft.Extensions.Logging;
-using OpenShock.Desktop.ModuleBase.Api;
-using OpenShock.Desktop.ModuleBase.Config;
-using OpenShock.Desktop.ModuleBase.Models;
 
-namespace CUShocker.Module.Services;
+namespace CUShocker.Core.Services;
 
 public sealed record SentControl(ControlDecision Decision, int ShockerCount, bool DryRun, DateTimeOffset At);
 
 public sealed class ControlSender
 {
-	private readonly IModuleConfig<CUShockerConfig> _config;
-	private readonly IOpenShockControl _control;
+	private readonly CUShockerSettings _settings;
+	private readonly IShockerOutput _output;
 	private readonly ILogger<ControlSender> _log;
 
 	private readonly Lock _lock = new();
@@ -23,10 +20,10 @@ public sealed class ControlSender
 
 	public event Action? StateChanged;
 
-	public ControlSender(IModuleConfig<CUShockerConfig> config, IOpenShockControl control, ILogger<ControlSender> log)
+	public ControlSender(CUShockerSettings settings, IShockerOutput output, ILogger<ControlSender> log)
 	{
-		_config = config;
-		_control = control;
+		_settings = settings;
+		_output = output;
 		_log = log;
 	}
 
@@ -64,39 +61,29 @@ public sealed class ControlSender
 
 	private async Task SendAsync(ControlDecision decision)
 	{
-		var config = _config.Config;
-		var shockerIds = config.ShockerIds.ToList();
-		if (shockerIds.Count == 0)
+		int shockerCount = _output.ShockerCount;
+		if (shockerCount == 0)
 		{
 			LastError = "No shockers selected";
 			return;
 		}
 
-		bool dryRun = config.Output != OutputMode.Live;
+		bool dryRun = _settings.Output != OutputMode.Live;
+		var at = DateTimeOffset.Now;
 		try
 		{
 			if (!dryRun)
-			{
-				var shocks = shockerIds.Select(id => new ShockerControl
-				{
-					Id = id,
-					Type = decision.Type,
-					Intensity = decision.Intensity,
-					Duration = decision.DurationMs,
-					Exclusive = true,
-				});
-				await _control.Control(shocks, "CUShocker");
-			}
+				await _output.Send(decision);
 
 			_log.LogInformation("{Mode} {Type} {Intensity}% {Duration}ms, pain {Pain:0.#}",
-				dryRun ? "Test" : "Sent", decision.Type, decision.Intensity, decision.DurationMs, decision.Pain);
-			LastSent = new SentControl(decision, shockerIds.Count, dryRun, DateTimeOffset.Now);
+				dryRun ? "Test" : "Sent", decision.Mode, decision.Intensity, decision.DurationMs, decision.Pain);
+			LastSent = new SentControl(decision, shockerCount, dryRun, at);
 			LastError = null;
 		}
 		catch (Exception ex)
 		{
 			LastError = ex.Message;
-			_log.LogError(ex, "Failed to send {Type}", decision.Type);
+			_log.LogError(ex, "Failed to send {Type}", decision.Mode);
 		}
 	}
 }

@@ -2,6 +2,10 @@
 	<PropertyGroup>
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
-		<Version>0.2.0</Version>
+		<Version>0.2.1</Version>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Simulator)' == 'true'">
+		<DefineConstants>$(DefineConstants);SIMULATOR</DefineConstants>
 	</PropertyGroup>
 </Project>

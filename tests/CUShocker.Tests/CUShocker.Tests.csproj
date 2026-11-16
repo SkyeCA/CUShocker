@@ -7,7 +7,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\src\CUShocker.Core\CUShocker.Core.csproj" />
 		<ProjectReference Include="..\..\src\CUShocker.Module\CUShocker.Module.csproj" />
+		<ProjectReference Include="..\..\src\CUShocker.MultiShock\CUShocker.MultiShock.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

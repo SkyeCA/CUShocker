@@ -4,6 +4,7 @@
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $desktopVersion = '1.1.4'
+$multiShockVersion = '4.8.3'
 
 function Invoke-Dotnet {
 	& dotnet @args
@@ -39,9 +40,13 @@ $moduleDir = Join-Path $stage 'OpenShock Desktop\modules\my.vore.cushocker'
 New-Item -ItemType Directory -Force $moduleDir | Out-Null
 Expand-Archive $moduleZip -DestinationPath $moduleDir
 
+$multiShockDir = Join-Path $stage 'MultiShock\Plugins\my.vore.cushocker'
+Invoke-Dotnet build (Join-Path $root 'src\CUShocker.MultiShock\CUShocker.MultiShock.csproj') -c Release --nologo -v quiet -o (Join-Path $work 'multishock') "-p:PluginInstallDir=$multiShockDir"
+
 $readme = (Get-Content (Join-Path $root 'packaging\README.txt') -Raw).
 	Replace('{VERSION}', $version).
 	Replace('{DESKTOP_VERSION}', $desktopVersion).
+	Replace('{MULTISHOCK_VERSION}', $multiShockVersion).
 	Replace("`r`n", "`n").Replace("`n", "`r`n")
 [IO.File]::WriteAllText((Join-Path $stage 'README.txt'), $readme, (New-Object Text.UTF8Encoding $false))
 

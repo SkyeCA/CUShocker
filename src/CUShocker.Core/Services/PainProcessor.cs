@@ -1,8 +1,7 @@
-using CUShocker.Module.Logic;
+using CUShocker.Core.Logic;
 using CUShocker.Protocol;
-using OpenShock.Desktop.ModuleBase.Config;
 
-namespace CUShocker.Module.Services;
+namespace CUShocker.Core.Services;
 
 public enum StateSource
 {
@@ -12,7 +11,8 @@ public enum StateSource
 
 public sealed class PainProcessor
 {
-	private readonly IModuleConfig<CUShockerConfig> _config;
+	private readonly CUShockerSettings _settings;
+	private readonly ControlLimits _limits;
 	private readonly ControlSender _sender;
 
 	private readonly Lock _lock = new();
@@ -26,9 +26,10 @@ public sealed class PainProcessor
 
 	public event Action? StateChanged;
 
-	public PainProcessor(IModuleConfig<CUShockerConfig> config, ControlSender sender)
+	public PainProcessor(CUShockerSettings settings, ControlLimits limits, ControlSender sender)
 	{
-		_config = config;
+		_settings = settings;
+		_limits = limits;
 		_sender = sender;
 	}
 
@@ -48,6 +49,8 @@ public sealed class PainProcessor
 		}
 	}
 
+	public PainState? ActiveState => _useSimulator ? LastSimulatorState : LastGameState;
+
 	public bool GameConnected =>
 		LastGameMessageAt is { } at &&
 		DateTimeOffset.Now - at < TimeSpan.FromMilliseconds(ProtocolInfo.ConnectionTimeoutMs);
@@ -55,7 +58,6 @@ public sealed class PainProcessor
 	public void Handle(PainState state, StateSource source)
 	{
 		ControlDecision? decision = null;
-		var config = _config.Config;
 
 		lock (_lock)
 		{
@@ -70,15 +72,15 @@ public sealed class PainProcessor
 			}
 
 			bool active = (source == StateSource.Simulator) == _useSimulator;
-			if (active && _trigger.ShouldFire(state, config.Trigger, config.MinPainChange))
+			if (active && _trigger.ShouldFire(state, _settings.Trigger, _settings.MinPainChange))
 			{
-				decision = PainRules.Choose(config, state.AveragePain);
+				decision = PainRules.Choose(_settings, _limits, state.AveragePain);
 				if (decision is not null)
 					LastDecision = decision;
 			}
 		}
 
-		if (decision is { } command && config.Output != OutputMode.Off)
+		if (decision is { } command && _settings.Output != OutputMode.Off)
 			_sender.Submit(command);
 
 		StateChanged?.Invoke();

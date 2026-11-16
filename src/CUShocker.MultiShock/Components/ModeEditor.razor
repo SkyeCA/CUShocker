@@ -1,0 +1,30 @@
+<Setting Label="Starts at pain">
+	<NumberInput Value="Mode.StartsAtPain" ValueChanged="value => Set(value, number => Mode.StartsAtPain = (float)number)"
+				 Min="0" Step="1" />
+</Setting>
+<Setting Label="Intensity">
+	<NumberInput Label="Min" Suffix="%" Value="Mode.MinIntensity" ValueChanged="value => Set(value, number => Mode.MinIntensity = (int)number)"
+				 Min="Limits.MinIntensity" Max="Limits.MaxIntensity" />
+	<NumberInput Label="Max" Suffix="%" Value="Mode.MaxIntensity" ValueChanged="value => Set(value, number => Mode.MaxIntensity = (int)number)"
+				 Min="Limits.MinIntensity" Max="Limits.MaxIntensity" />
+</Setting>
+<Setting Label="Duration">
+	<NumberInput Label="Min" Suffix="ms" Value="Mode.MinDurationMs" ValueChanged="value => Set(value, number => Mode.MinDurationMs = (int)number)"
+				 Min="Limits.MinDurationMs" Max="Limits.MaxDurationMs" Step="100" />
+	<NumberInput Label="Max" Suffix="ms" Value="Mode.MaxDurationMs" ValueChanged="value => Set(value, number => Mode.MaxDurationMs = (int)number)"
+				 Min="Limits.MinDurationMs" Max="Limits.MaxDurationMs" Step="100" />
+</Setting>
+
+@code {
+	[Parameter, EditorRequired] public ModeConfig Mode { get; set; } = null!;
+	[Parameter, EditorRequired] public ControlLimits Limits { get; set; } = null!;
+	[Parameter] public EventCallback Changed { get; set; }
+
+	private Task Set(double? value, Action<double> apply)
+	{
+		if (value is not { } number)
+			return Task.CompletedTask;
+		apply(number);
+		return Changed.InvokeAsync();
+	}
+}

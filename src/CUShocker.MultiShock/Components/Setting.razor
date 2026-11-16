@@ -1,0 +1,10 @@
+<SettingRow Label="@Label" WideControl="true">
+	<div class="flex items-center justify-end gap-2">
+		@ChildContent
+	</div>
+</SettingRow>
+
+@code {
+	[Parameter, EditorRequired] public string Label { get; set; } = "";
+	[Parameter] public RenderFragment? ChildContent { get; set; }
+}

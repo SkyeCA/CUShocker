@@ -1,16 +1,17 @@
-using CUShocker.Module;
-using CUShocker.Module.Logic;
-using OpenShock.Desktop.ModuleBase.Models;
+using CUShocker.Core;
+using CUShocker.Core.Logic;
 
 namespace CUShocker.Tests;
 
 public class PainRulesTests
 {
-	private static ControlDecision? Choose(CUShockerConfig config, float pain) => PainRules.Choose(config, pain);
+	private static readonly ControlLimits Limits = new(MinIntensity: 1, MaxIntensity: 100, MinDurationMs: 300, MaxDurationMs: 30000);
 
-	private static CUShockerConfig Config(ControlMode mode = ControlMode.Shock)
+	private static ControlDecision? Choose(CUShockerSettings config, float pain) => PainRules.Choose(config, Limits, pain);
+
+	private static CUShockerSettings Config(ControlMode mode = ControlMode.Shock)
 	{
-		var config = new CUShockerConfig { PainForMaximum = 100, Mode = mode };
+		var config = new CUShockerSettings { PainForMaximum = 100, Mode = mode };
 		config.Vibrate = new ModeConfig { StartsAtPain = 10, MinIntensity = 20, MaxIntensity = 60, MinDurationMs = 300, MaxDurationMs = 1000 };
 		config.Shock = new ModeConfig { StartsAtPain = 50, MinIntensity = 5, MaxIntensity = 25, MinDurationMs = 300, MaxDurationMs = 300 };
 		return config;
@@ -26,24 +27,24 @@ public class PainRulesTests
 	}
 
 	[Theory]
-	[InlineData(ControlMode.Shock, ControlType.Shock)]
-	[InlineData(ControlMode.Vibrate, ControlType.Vibrate)]
-	public void SelectedModeIsAlwaysUsed(ControlMode mode, ControlType expected)
+	[InlineData(ControlMode.Shock)]
+	[InlineData(ControlMode.Vibrate)]
+	public void SelectedModeIsAlwaysUsed(ControlMode mode)
 	{
 		var config = Config(mode);
 
-		Assert.Equal(expected, Choose(config, 60)?.Type);
-		Assert.Equal(expected, Choose(config, 500)?.Type);
+		Assert.Equal(mode, Choose(config, 60)?.Mode);
+		Assert.Equal(mode, Choose(config, 500)?.Mode);
 	}
 
 	[Theory]
 	[InlineData(ControlMode.Shock, 49.9f, null)]
-	[InlineData(ControlMode.Shock, 50f, ControlType.Shock)]
+	[InlineData(ControlMode.Shock, 50f, ControlMode.Shock)]
 	[InlineData(ControlMode.Vibrate, 9.9f, null)]
-	[InlineData(ControlMode.Vibrate, 10f, ControlType.Vibrate)]
-	public void NothingBelowTheSelectedModesThreshold(ControlMode mode, float pain, ControlType? expected)
+	[InlineData(ControlMode.Vibrate, 10f, ControlMode.Vibrate)]
+	public void NothingBelowTheSelectedModesThreshold(ControlMode mode, float pain, ControlMode? expected)
 	{
-		Assert.Equal(expected, Choose(Config(mode), pain)?.Type);
+		Assert.Equal(expected, Choose(Config(mode), pain)?.Mode);
 	}
 
 	[Fact]
@@ -77,18 +78,18 @@ public class PainRulesTests
 	}
 
 	[Fact]
-	public void ClampsToWhatOpenShockAccepts()
+	public void ClampsToTheLimits()
 	{
 		var config = Config(ControlMode.Vibrate);
 		config.Vibrate = new ModeConfig { StartsAtPain = 1, MinIntensity = 0, MaxIntensity = 400, MinDurationMs = 50, MaxDurationMs = 90000 };
 
 		var low = Choose(config, 1)!.Value;
-		Assert.Equal(PainRules.MinIntensity, low.Intensity);
-		Assert.Equal(PainRules.MinDurationMs, low.DurationMs);
+		Assert.Equal(Limits.MinIntensity, low.Intensity);
+		Assert.Equal(Limits.MinDurationMs, low.DurationMs);
 
 		var high = Choose(config, 100)!.Value;
-		Assert.Equal(PainRules.MaxIntensity, high.Intensity);
-		Assert.Equal(PainRules.MaxDurationMs, high.DurationMs);
+		Assert.Equal(Limits.MaxIntensity, high.Intensity);
+		Assert.Equal(Limits.MaxDurationMs, high.DurationMs);
 	}
 
 	[Fact]

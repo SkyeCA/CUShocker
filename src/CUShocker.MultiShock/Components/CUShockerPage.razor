@@ -1,0 +1,195 @@
+@page "/plugins/my-vore-cushocker/cushocker"
+@implements IAsyncDisposable
+
+<PageHeader Title="CUShocker" Icon="zap">
+	<Meta>
+		@if (Processor.GameConnected)
+		{
+			<Badge Variant="success">Game connected</Badge>
+		}
+		else
+		{
+			<Badge Variant="muted">Waiting for game</Badge>
+		}
+	</Meta>
+	<Actions>
+		<Tabs Items="OutputTabs" Variant="segmented" Value="@Cfg.Output.ToString()" ValueChanged="SetOutput" />
+	</Actions>
+</PageHeader>
+
+<div class="max-w-3xl space-y-4">
+
+	<div class="grid grid-cols-2 gap-3">
+		<StatTile Label="Pain" Value="@(Processor.ActiveState is { InWorld: true } state ? state.AveragePain.ToString("0.0") : "–")" />
+		<StatTile Label="Last command" Value="@(Sender.LastSent?.Decision.Describe() ?? "–")" Hint="@Sender.LastSent?.At.ToString("HH:mm:ss")" />
+	</div>
+
+	@if (Listener.LastError is { } listenerError)
+	{
+		<Alert Variant="danger">@listenerError</Alert>
+	}
+	@if (Sender.LastError is { } sendError)
+	{
+		<Alert Variant="danger">@sendError</Alert>
+	}
+
+	@if (BuildInfo.HasSimulator)
+	{
+		<Card Title="Simulator">
+			<Setting Label="Use simulator">
+				<Toggle Value="Simulator.Enabled" ValueChanged="enabled => Simulator.Enabled = enabled" AriaLabel="Use simulator" />
+			</Setting>
+			@if (Simulator.Enabled)
+			{
+				<Setting Label="Pain">
+					<Slider Value="Simulator.Pain" ValueChanged="pain => Simulator.SetPain((float)pain)" Min="0" Max="Simulator.MaxPain" Step="0.5" Class="w-64" />
+				</Setting>
+				<Setting Label="Alive">
+					<Toggle Value="Simulator.Alive" ValueChanged="Simulator.SetAlive" AriaLabel="Alive" />
+				</Setting>
+			}
+		</Card>
+	}
+
+	<Card Title="Shockers">
+		@{ var devices = Devices.GetLoadedShockersGroupedByDevice().ToList(); }
+		@if (devices.Count == 0)
+		{
+			<EmptyState Icon="zap-off" Title="No shockers found" />
+		}
+		@foreach (var device in devices)
+		{
+			<div class="section-label">Device @device.DeviceId</div>
+			@foreach (var shocker in device.Shockers)
+			{
+				var target = new ShockerRef(shocker.DeviceId, shocker.ShockerId);
+				<Checkbox Value="Cfg.Shockers.Contains(target)" ValueChanged="selected => SetShocker(target, selected)" Label="@shocker.Name" />
+			}
+		}
+	</Card>
+
+	<Card Title="When to fire">
+		<Setting Label="Fire on">
+			<Tabs Items="TriggerTabs" Variant="segmented" Value="@Cfg.Trigger.ToString()" ValueChanged="SetTrigger" />
+		</Setting>
+		<Setting Label="Minimum pain change">
+			<NumberInput Value="Cfg.MinPainChange" ValueChanged="value => SetNumber(value, number => Cfg.MinPainChange = (float)number)"
+						 Min="PainTrigger.SmallestPainChange" Step="0.5" />
+		</Setting>
+		<Setting Label="Pain at maximum">
+			<NumberInput Value="Cfg.PainForMaximum" ValueChanged="value => SetNumber(value, number => Cfg.PainForMaximum = (float)number)"
+						 Min="1" Step="5" />
+		</Setting>
+	</Card>
+
+	<Card Title="Mode">
+		<Setting Label="Mode">
+			<Tabs Items="ModeTabs" Variant="segmented" Value="@Cfg.Mode.ToString()" ValueChanged="SetMode" />
+		</Setting>
+		<ModeEditor @key="Cfg.Mode" Mode="Cfg.ActiveMode" Limits="Limits" Changed="Store.Save" />
+	</Card>
+
+	<Card Title="Connection">
+		<Setting Label="UDP port">
+			<NumberInput Value="_port" ValueChanged="value => _port = (int)(value ?? _port)" Min="1" Max="65535" />
+			<Button Variant="outline" Text="Apply" Disabled="@(_port == Listener.Port && Listener.IsListening)" OnClick="ApplyPort" />
+		</Setting>
+	</Card>
+
+</div>
+
+@code {
+	[Inject] private MultiShockConfigStore Store { get; set; } = null!;
+	[Inject] private IDeviceActions Devices { get; set; } = null!;
+	[Inject] private GameListener Listener { get; set; } = null!;
+	[Inject] private PainProcessor Processor { get; set; } = null!;
+	[Inject] private ControlSender Sender { get; set; } = null!;
+	[Inject] private PainSimulator Simulator { get; set; } = null!;
+	[Inject] private ControlLimits Limits { get; set; } = null!;
+
+	private static readonly IReadOnlyList<Tabs.TabItem> OutputTabs =
+	[
+		new(nameof(OutputMode.Off), "Off"),
+		new(nameof(OutputMode.DryRun), "Test mode"),
+		new(nameof(OutputMode.Live), "Live"),
+	];
+
+	private static readonly IReadOnlyList<Tabs.TabItem> TriggerTabs =
+	[
+		new(nameof(TriggerFilter.IncreasesOnly), "Pain increases"),
+		new(nameof(TriggerFilter.AllChanges), "Any pain change"),
+	];
+
+	private static readonly IReadOnlyList<Tabs.TabItem> ModeTabs =
+	[
+		new(nameof(ControlMode.Shock), "Shock"),
+		new(nameof(ControlMode.Vibrate), "Vibrate"),
+	];
+
+	private MultiShockConfig Cfg => Store.Config;
+
+	private Timer? _refreshTimer;
+	private int _port;
+
+	protected override void OnInitialized()
+	{
+		_port = Cfg.UdpPort;
+		Processor.StateChanged += Refresh;
+		Sender.StateChanged += Refresh;
+		Listener.StateChanged += Refresh;
+		_refreshTimer = new Timer(_ => Refresh(), null, 1000, 1000);
+	}
+
+	private void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+	private void SetOutput(string output)
+	{
+		Cfg.Output = Enum.Parse<OutputMode>(output);
+		Store.Save();
+	}
+
+	private void SetTrigger(string trigger)
+	{
+		Cfg.Trigger = Enum.Parse<TriggerFilter>(trigger);
+		Store.Save();
+	}
+
+	private void SetMode(string mode)
+	{
+		Cfg.Mode = Enum.Parse<ControlMode>(mode);
+		Store.Save();
+	}
+
+	private void SetNumber(double? value, Action<double> apply)
+	{
+		if (value is not { } number)
+			return;
+		apply(number);
+		Store.Save();
+	}
+
+	private void SetShocker(ShockerRef shocker, bool selected)
+	{
+		if (selected && !Cfg.Shockers.Contains(shocker))
+			Cfg.Shockers.Add(shocker);
+		else if (!selected)
+			Cfg.Shockers.Remove(shocker);
+		Store.Save();
+	}
+
+	private async Task ApplyPort()
+	{
+		Cfg.UdpPort = _port;
+		Store.Save();
+		await Listener.RestartAsync(_port);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		Processor.StateChanged -= Refresh;
+		Sender.StateChanged -= Refresh;
+		Listener.StateChanged -= Refresh;
+		if (_refreshTimer is not null)
+			await _refreshTimer.DisposeAsync();
+	}
+}

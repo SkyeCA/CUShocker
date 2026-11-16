@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<MultiShockPluginId>my.vore.cushocker</MultiShockPluginId>
+		<MultiShockMinAppVersion>4.8.3</MultiShockMinAppVersion>
+		<MultiShockSdkVersion>1.14.0</MultiShockSdkVersion>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<OutputType>Library</OutputType>
+		<AssemblyName>CUShocker.MultiShock</AssemblyName>
+		<RootNamespace>CUShocker.MultiShock</RootNamespace>
+		<EnableDefaultCssItems>false</EnableDefaultCssItems>
+		<IsPackable>false</IsPackable>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PluginInstallDir Condition="'$(PluginInstallDir)' == '' and '$(Configuration)' == 'Debug'">$(LOCALAPPDATA)\PiShock\MultiShock\Plugins\$(MultiShockPluginId)</PluginInstallDir>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\CUShocker.Core\CUShocker.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="PiShock.MultiShock.PluginSdk" Version="$(MultiShockSdkVersion)" ExcludeAssets="contentFiles" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+	</ItemGroup>
+
+	<Target Name="WritePluginManifest" AfterTargets="Build">
+		<PropertyGroup>
+			<PluginManifest>{
+	"manifestVersion": 2,
+	"id": "$(MultiShockPluginId)",
+	"name": "CUShocker",
+	"version": "$(Version)",
+	"entryPoint": "$(TargetFileName)",
+	"description": "Shocks you when your Expie gets hurt in Casualties Unknown",
+	"sourceUrl": "https://www.nexusmods.com/scavprototype/mods/879",
+	"minAppVersion": "$(MultiShockMinAppVersion)",
+	"sdkVersion": "$(MultiShockSdkVersion)"
+}</PluginManifest>
+		</PropertyGroup>
+		<WriteLinesToFile File="$(TargetDir)plugin.json" Lines="$(PluginManifest)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+	</Target>
+
+	<Target Name="InstallPlugin" AfterTargets="WritePluginManifest" Condition="'$(PluginInstallDir)' != ''">
+		<ItemGroup>
+			<PluginFile Include="$(TargetDir)plugin.json;$(TargetPath);$(TargetDir)$(TargetName).pdb;$(TargetDir)CUShocker.Core.dll;$(TargetDir)CUShocker.Core.pdb" />
+		</ItemGroup>
+		<MakeDir Directories="$(PluginInstallDir)" ContinueOnError="WarnAndContinue" />
+		<Copy SourceFiles="@(PluginFile)" DestinationFolder="$(PluginInstallDir)" Retries="0" ContinueOnError="WarnAndContinue" />
+	</Target>
+
+</Project>

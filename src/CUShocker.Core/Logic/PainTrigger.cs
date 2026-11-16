@@ -1,6 +1,6 @@
 using CUShocker.Protocol;
 
-namespace CUShocker.Module.Logic;
+namespace CUShocker.Core.Logic;
 
 public sealed class PainTrigger
 {
