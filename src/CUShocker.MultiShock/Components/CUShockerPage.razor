@@ -19,6 +19,14 @@
 
 <div class="max-w-3xl space-y-4">
 
+	<Card>
+		<div class="space-y-1 text-sm text-app-text">
+			<div>@ModInfo.Name by @ModInfo.Author (<a class="text-app-primary hover:underline" href="@ModInfo.AuthorUrl" target="_blank">@ModInfo.AuthorUrl</a>)</div>
+			<div>@ModInfo.Name GitHub (<a class="text-app-primary hover:underline" href="@ModInfo.GitHubUrl" target="_blank">@ModInfo.GitHubUrl</a>)</div>
+			<div>Version: @ModInfo.Version</div>
+		</div>
+	</Card>
+
 	<div class="grid grid-cols-2 gap-3">
 		<StatTile Label="Pain" Value="@(Processor.ActiveState is { InWorld: true } state ? state.AveragePain.ToString("0.0") : "–")" />
 		<StatTile Label="Last command" Value="@(Sender.LastSent?.Decision.Describe() ?? "–")" Hint="@Sender.LastSent?.At.ToString("HH:mm:ss")" />

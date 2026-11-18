@@ -3,6 +3,12 @@
 <MudStack Spacing="3" Class="pa-4">
 
 	<MudPaper Class="pa-4">
+		<MudText>@ModInfo.Name by @ModInfo.Author (<MudLink Href="@ModInfo.AuthorUrl" Target="_blank">@ModInfo.AuthorUrl</MudLink>)</MudText>
+		<MudText>@ModInfo.Name GitHub (<MudLink Href="@ModInfo.GitHubUrl" Target="_blank">@ModInfo.GitHubUrl</MudLink>)</MudText>
+		<MudText>Version: @ModInfo.Version</MudText>
+	</MudPaper>
+
+	<MudPaper Class="pa-4">
 		<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap">
 			<MudText Typo="Typo.h5">CUShocker</MudText>
 			<MudRadioGroup T="OutputMode" Value="Cfg.Output" ValueChanged="SetOutput">

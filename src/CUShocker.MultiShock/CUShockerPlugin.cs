@@ -12,8 +12,8 @@ public sealed class CUShockerPlugin : IPlugin, IPluginRouteProvider
 	public const string PluginId = "my.vore.cushocker";
 
 	public string Id => PluginId;
-	public string Name => "CUShocker";
-	public string Version => typeof(CUShockerPlugin).Assembly.GetName().Version!.ToString(3);
+	public string Name => ModInfo.Name;
+	public string Version => ModInfo.Version;
 	public string Description => "Shocks you when your Expie gets hurt in Casualties Unknown";
 	public string SourceUrl => "https://www.nexusmods.com/scavprototype/mods/879";
 
