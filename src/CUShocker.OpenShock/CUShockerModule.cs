@@ -1,7 +1,7 @@
 using CUShocker.Core;
 using CUShocker.Core.Services;
-using CUShocker.Module;
-using CUShocker.Module.Services;
+using CUShocker.OpenShock;
+using CUShocker.OpenShock.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
@@ -12,7 +12,7 @@ using OpenShock.Desktop.ModuleBase.Navigation;
 [assembly: DesktopModule(typeof(CUShockerModule), "my.vore.cushocker", "CUShocker")]
 [assembly: RequiredPermission(TokenPermissions.Shockers_Use)]
 
-namespace CUShocker.Module;
+namespace CUShocker.OpenShock;
 
 public sealed class CUShockerModule : DesktopModuleBase
 {

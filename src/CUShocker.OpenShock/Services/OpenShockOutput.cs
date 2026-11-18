@@ -5,7 +5,7 @@ using OpenShock.Desktop.ModuleBase.Api;
 using OpenShock.Desktop.ModuleBase.Config;
 using OpenShock.Desktop.ModuleBase.Models;
 
-namespace CUShocker.Module.Services;
+namespace CUShocker.OpenShock.Services;
 
 public sealed class OpenShockOutput : IShockerOutput
 {

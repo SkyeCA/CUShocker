@@ -16,7 +16,7 @@ $dist = Join-Path $root 'dist'
 $work = Join-Path $dist 'work'
 $stage = Join-Path $work "CUShocker-$version"
 $zip = Join-Path $dist "CUShocker-$version.zip"
-$moduleZip = Join-Path $dist "CUShocker.Module-$version.module.zip"
+$moduleZip = Join-Path $dist "CUShocker.OpenShock-$version.module.zip"
 
 foreach ($path in @($work, $zip, $moduleZip)) {
 	if (Test-Path $path) { Remove-Item $path -Recurse -Force }
@@ -29,8 +29,8 @@ Invoke-Dotnet build (Join-Path $root 'src\CUShocker.Mod\CUShocker.Mod.csproj') -
 
 # publish also creates the .module.zip
 $moduleOut = Join-Path $work 'module'
-Invoke-Dotnet publish (Join-Path $root 'src\CUShocker.Module\CUShocker.Module.csproj') -c Release --nologo -v quiet -o $moduleOut
-Copy-Item (Join-Path $moduleOut 'CUShocker.Module.module.zip') $moduleZip
+Invoke-Dotnet publish (Join-Path $root 'src\CUShocker.OpenShock\CUShocker.OpenShock.csproj') -c Release --nologo -v quiet -o $moduleOut
+Copy-Item (Join-Path $moduleOut 'CUShocker.OpenShock.module.zip') $moduleZip
 
 $pluginDir = Join-Path $stage 'Casualties Unknown\BepInEx\plugins\CUShocker'
 New-Item -ItemType Directory -Force $pluginDir | Out-Null

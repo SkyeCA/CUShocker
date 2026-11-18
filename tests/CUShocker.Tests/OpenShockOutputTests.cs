@@ -1,7 +1,7 @@
 using CUShocker.Core;
 using CUShocker.Core.Logic;
-using CUShocker.Module;
-using CUShocker.Module.Services;
+using CUShocker.OpenShock;
+using CUShocker.OpenShock.Services;
 using OpenShock.Desktop.ModuleBase.Api;
 using OpenShock.Desktop.ModuleBase.Config;
 using OpenShock.Desktop.ModuleBase.Models;

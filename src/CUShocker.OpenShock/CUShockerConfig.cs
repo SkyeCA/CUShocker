@@ -1,6 +1,6 @@
 using CUShocker.Core;
 
-namespace CUShocker.Module;
+namespace CUShocker.OpenShock;
 
 public sealed class CUShockerConfig : CUShockerSettings
 {

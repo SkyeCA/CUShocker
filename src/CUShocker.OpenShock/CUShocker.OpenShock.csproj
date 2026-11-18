@@ -5,8 +5,8 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<OutputType>Library</OutputType>
-		<AssemblyName>CUShocker.Module</AssemblyName>
-		<RootNamespace>CUShocker.Module</RootNamespace>
+		<AssemblyName>CUShocker.OpenShock</AssemblyName>
+		<RootNamespace>CUShocker.OpenShock</RootNamespace>
 		<EnableDefaultCssItems>false</EnableDefaultCssItems>
 		<IsPackable>false</IsPackable>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
