@@ -3,7 +3,7 @@
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-$desktopVersion = '1.1.4'
+$desktopVersion = '1.3.1'
 $multiShockVersion = '4.8.3'
 
 function Invoke-Dotnet {
