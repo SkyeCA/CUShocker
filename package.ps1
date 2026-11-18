@@ -11,7 +11,7 @@ function Invoke-Dotnet {
 	if ($LASTEXITCODE -ne 0) { throw "dotnet $($args -join ' ') failed" }
 }
 
-$version = ([xml](Get-Content (Join-Path $root 'Directory.Build.props'))).Project.PropertyGroup.Version
+$version = ([xml](Get-Content (Join-Path $root 'Directory.Build.props'))).SelectSingleNode('/Project/PropertyGroup/Version').InnerText
 $dist = Join-Path $root 'dist'
 $work = Join-Path $dist 'work'
 $stage = Join-Path $work "CUShocker-$version"
